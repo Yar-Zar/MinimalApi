@@ -13,7 +13,7 @@ namespace TestMinimalApi.Presentation.Api.EndPoints
                        //RequireAuthorization().
                        WithTags("Region");
             group.MapGet("/getallregions", GetAllAsync)
-                .WithName("GetAllregions");
+                .WithName("GetAllRegions");
             //group.MapPost("/createregion", Create)
             //    .WithName("CreateRegion");
             //group.MapPut("/updateregion", Update)
