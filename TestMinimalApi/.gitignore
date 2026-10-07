@@ -1,0 +1,8 @@
+﻿.vs/
+bin/
+obj/
+*.user
+*.suo
+
+# Docker အတွက် မလိုသည်များ
+.dockerignore

@@ -1,0 +1,29 @@
+﻿services:                # ၁။ ဒီမှာ services: ပါရမယ်
+  testminimalapi:        # ၂။ Space ၂ ခု ခြားပါ
+    build:
+      context: .
+      dockerfile: TestMinimalApi/Dockerfile
+    image: testminiapi:latest
+    ports:
+      - "9000:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Server=db;Database=formc-v1-db;User ID=sa;Password=U@TdB@123!@#;TrustServerCertificate=True;
+
+  db:                    # ၃။ 'db' သည် 'testminimalapi' နဲ့ တစ်တန်းတည်း ဖြစ်ရပါမယ် (Space ၂ ခု)
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    restart: always
+    ports:               # ၄။ ဒီမှာ ports ပါရမယ် (SSMS အတွက်)
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=U@TdB@123!@#
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'U@TdB@123!@#' -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10

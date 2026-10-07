@@ -1,0 +1,48 @@
+﻿name: CI/CD to Kubernetes
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
+
+    # 1. Docker Hub သို့ Login ဝင်ခြင်း
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    # 2. Docker Image တည်ဆောက်ခြင်း (Root ထဲတွင် Dockerfile ရှိသဖြင့် context ကို "./" ဟု သတ်မှတ်သည်)
+    - name: Build and Push Docker Image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./
+        push: true
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/test-minimal-api:latest
+          ${{ secrets.DOCKER_USERNAME }}/test-minimal-api:${{ github.sha }}
+
+    # 3. Kubernetes Kubeconfig ချိတ်ဆက်ခြင်း
+    - name: Set up Kubeconfig
+      uses: azure/k8s-set-context@v4
+      with:
+        method: kubeconfig
+        kubeconfig: ${{ secrets.KUBECONFIG }}
+
+    # 4. Kubernetes သို့ Deploy လုပ်ခြင်း (k8s ဖိုင်များသည် root အောက်ရှိ k8s ဖိုင်တွဲထဲတွင် ရှိသည်)[cite: 1]
+    - name: Deploy to Kubernetes
+      uses: azure/k8s-deploy@v5
+      with:
+        images: |
+          ${{ secrets.DOCKER_USERNAME }}/test-minimal-api:${{ github.sha }}
+        manifests: |
+          k8s/deployment.yml
+          k8s/service.yml
+        kubectl-version: 'latest'
