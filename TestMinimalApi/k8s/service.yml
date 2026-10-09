@@ -1,12 +1,12 @@
 ﻿apiVersion: v1
 kind: Service
 metadata:
-  name: test-minimal-api-service
+  name: test-minimal-api-svc
+  namespace: default
 spec:
-  type: ClusterIP  # သို့မဟုတ် Killercoda / Testing အတွက် လိုအပ်ပါက NodePort သို့မဟုတ် LoadBalancer သို့ ပြောင်းသုံးနိုင်ပါသည်
+  type: NodePort 
   selector:
     app: test-minimal-api
   ports:
-    - protocol: TCP
-      port: 80           # Service ကို ခေါ်မည့် Port
-      targetPort: 8080   # Pod ထဲရှိ Container ပြေးနေသည့် Port (Minimal API default 8080)
+  - port: 80
+    targetPort: 80
