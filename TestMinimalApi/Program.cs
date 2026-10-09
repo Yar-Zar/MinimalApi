@@ -115,7 +115,7 @@ app.UseSwaggerUI(c =>
 //}
 app.MapHealthChecks("/health");
 
-app.MapGet("/", () => "Hello CI/CD Deployment!");
+app.MapGet("/", () => "Hello CI/CD Deploy!");
 app.MapGoogleOAuthEndPoints();
 app.MapTestEndPoints();
 app.UseAuthentication();
