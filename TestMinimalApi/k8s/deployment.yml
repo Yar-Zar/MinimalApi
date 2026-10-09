@@ -6,6 +6,7 @@ metadata:
   annotations:
     argocd-image-updater.argoproj.io/image-list: myapp=ghcr.io/yar-zar/minimalapi
     argocd-image-updater.argoproj.io/myapp.update-strategy: latest
+    argocd-image-updater.argoproj.io/write-back-method: git
 spec:
   replicas: 2
   selector:
