@@ -25,7 +25,7 @@ jobs:
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
-        context: ./TestMinimalApi
+        context: .
         file: ./TestMinimalApi/Dockerfile
         push: true
         tags: ghcr.io/yar-zar/minimalapi:latest
