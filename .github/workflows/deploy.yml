@@ -8,7 +8,7 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
 
     steps:
@@ -20,7 +20,7 @@ jobs:
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
-        password: ${{ secrets.CR_PAT  }}
+        password: ${{ secrets.CR_PAT }}
 
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
@@ -31,3 +31,23 @@ jobs:
         tags: |
           ghcr.io/yar-zar/minimalapi:${{ github.sha }}
           ghcr.io/yar-zar/minimalapi:latest
+
+    - name: Update Kubernetes image tag
+      env:
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        sed -i \
+          "s|image: ghcr.io/yar-zar/minimalapi:.*|image: ghcr.io/yar-zar/minimalapi:${IMAGE_TAG}|" \
+          TestMinimalApi/k8s/deployment.yaml
+
+    - name: Commit and push GitOps change
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+        git add TestMinimalApi/k8s/deployment.yaml
+
+        if ! git diff --cached --quiet; then
+          git commit -m "chore(gitops): deploy ${GITHUB_SHA}"
+          git push origin HEAD:main
+        fi
