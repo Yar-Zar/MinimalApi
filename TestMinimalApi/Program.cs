@@ -92,7 +92,7 @@ app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Test Minimal Api V1");
-    c.RoutePrefix = string.Empty; // ဒါထည့်ရင် domain.onrender.com ဆိုတာနဲ့ Swagger တန်းပွင့်ပါမယ်
+    c.RoutePrefix = string.Empty;
 });
 //if (app.Environment.IsDevelopment())
 //{
@@ -115,7 +115,7 @@ app.UseSwaggerUI(c =>
 //}
 app.MapHealthChecks("/health");
 
-app.MapGet("/", () => "Hello World!");
+app.MapGet("/", () => "Hello CI/CD Deployment!");
 app.MapGoogleOAuthEndPoints();
 app.MapTestEndPoints();
 app.UseAuthentication();
