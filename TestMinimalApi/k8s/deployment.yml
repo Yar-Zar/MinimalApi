@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: test-minimal-api
-        image: ghcr.io/yar-zar/minimalapi:c414d154fa8efa91f6bd502c94b05cff8a048b61
+        image: ghcr.io/yar-zar/minimalapi:6291b9dc3b0f16b8c2104e2d485f06335d0669f3
         ports:
         - containerPort: 8080  
         resources:
