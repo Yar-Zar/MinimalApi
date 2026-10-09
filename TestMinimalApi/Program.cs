@@ -75,6 +75,7 @@ builder.Services.AddAuthorization();
 //    .CreateLogger();
 // Read Serilog config from appsettings.json
 builder.Host.UseSerilog((ctx, lc) => lc .ReadFrom.Configuration(ctx.Configuration) );
+builder.Services.AddHealthChecks();
 var app = builder.Build();
 
 // ===== Serilog automatic request logging =====
@@ -112,6 +113,9 @@ app.UseSwaggerUI(c =>
 //    // Production ??? optional secure route
 //    app.MapGet("/swagger", () => Results.Forbid());
 //}
+app.MapHealthChecks("/health");
+
+app.MapGet("/", () => "Hello World!");
 app.MapGoogleOAuthEndPoints();
 app.MapTestEndPoints();
 app.UseAuthentication();

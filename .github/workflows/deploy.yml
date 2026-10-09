@@ -28,4 +28,4 @@ jobs:
         context: .
         file: ./TestMinimalApi/Dockerfile
         push: true
-        tags: ghcr.io/yar-zar/minimalapi:latest
+        tags: ghcr.io/yar-zar/minimalapi:${{ github.sha }}

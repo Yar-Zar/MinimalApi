@@ -3,6 +3,9 @@ kind: Deployment
 metadata:
   name: test-minimal-api
   namespace: default
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: myapp=ghcr.io/yar-zar/minimalapi
+    argocd-image-updater.argoproj.io/myapp.update-strategy: latest
 spec:
   replicas: 2
   selector:
