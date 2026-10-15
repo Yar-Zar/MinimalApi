@@ -24,7 +24,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.CR_PAT }}  # GHCR အတွက် ဖွဲ့စည်းထားသော Secret (သို့မဟုတ် GITHUB_TOKEN)
+          password: ${{ secrets.CR_PAT }}
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
@@ -44,13 +44,33 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: Update Kubernetes Manifest in GitOps Repo
-        uses: fjogeleit/yaml-update-action@main
+      # 1. K8s Manifest Repo ကို သီးသန့် Folder တစ်ခုအနေဖြင့် ထပ်မံ Checkout လုပ်ခြင်း
+      - name: Checkout K8s Manifests Repo
+        uses: actions/checkout@v4
         with:
           repository: Yar-Zar/K8s-Manifests-Repository
-          branch: main
           token: ${{ secrets.GITOPS_ACCESS_TOKEN }}
-          valueFile: 'deployment.yaml'                  # targetFile အစား valueFile ကို သုံးပါ
-          propertyPath: 'spec.template.spec.containers[0].image'
-          value: ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.version }}
-          message: 'CI: Update image tag to ${{ steps.meta.outputs.version }}' # commitMessage အစား message ကို သုံးပါ
+          path: k8s-manifests
+
+      # 2. Manifest ဖိုင်ထဲက Image Tag ကို အသစ်လဲလှယ်ခြင်း (Generic Regex သုံးထားပါသည်)
+      - name: Update Kubernetes Image Tag
+        env:
+          IMAGE_VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          sed -i \
+            "s|image: ghcr.io/.*/minimalapi:.*|image: ghcr.io/${{ github.repository }}:${IMAGE_VERSION}|" \
+            k8s-manifests/deployment.yaml
+
+      # 3. K8s Manifest Repo ထဲသို့ Git Commit & Push ပြန်လုပ်ခြင်း
+      - name: Commit and Push to Manifest Repo
+        run: |
+          cd k8s-manifests
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          git add deployment.yaml
+          
+          if ! git diff --cached --quiet; then
+            git commit -m "CI: Update image tag to ${{ steps.meta.outputs.version }}"
+            git push origin main
+          fi
