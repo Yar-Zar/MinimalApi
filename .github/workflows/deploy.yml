@@ -31,11 +31,10 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          # toLower သုံး၍ GHCR လိုအပ်ချက်အရ စာလုံးသေးဖြင့် သတ်မှတ်ခြင်း
           images: ${{ env.REGISTRY }}/${{ github.repository }}
           tags: |
             type=sha,format=short
-            latest
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -46,7 +45,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-     # 1. K8s Manifest Repo ကို သီးသန့် Folder တစ်ခုအနေဖြင့် ထပ်မံ Checkout လုပ်ခြင်း
+     # 1. K8s Manifest Repo ကို ရှင်းလင်းစွာ Checkout လုပ်ခြင်း
       - name: Checkout K8s Manifests Repo
         uses: actions/checkout@v4
         with:
@@ -55,18 +54,23 @@ jobs:
           path: k8s-manifests
           persist-credentials: true
 
-      # 2. Manifest ဖိုင်ထဲက Image Tag ကို တိကျစွာ အသစ်လဲလှယ်ခြင်း
+      # 2. 'latest' အစား တိကျသော Commit SHA (sha-xxxx) ကို သီးသန့်ထုတ်၍ အစားထိုးခြင်း
       - name: Update Kubernetes Image Tag
         env:
-          IMAGE_VERSION: ${{ steps.meta.outputs.version }}
           FULL_IMAGE: ${{ env.REGISTRY }}/${{ github.repository }}
         run: |
           LOWER_IMAGE=$(echo "${{ env.FULL_IMAGE }}" | tr '[:upper:]' '[:lower:]')
           
-          # deployment.yaml ထဲရှိ image line ကို ရှာပြီး အသစ်ဖြင့် အစားထိုးခြင်း
-          sed -i "s|image:.*|image: ${LOWER_IMAGE}:${IMAGE_VERSION}|g" k8s-manifests/deployment.yaml
+          # github.sha ရဲ့ ရှေ့စာလုံး ၇ လုံးကို ယူ၍ sha-xxxx ပုံစံဖန်တီးခြင်း
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          IMAGE_TAG="sha-${SHORT_SHA}"
+          
+          echo "Updating deployment.yaml with image: ${LOWER_IMAGE}:${IMAGE_TAG}"
+          
+          # Exact match ဖြင့် deployment.yaml ထဲရှိ image tag ကို တိကျစွာပြောင်းမည်
+          sed -i "s|image: ${LOWER_IMAGE}:.*|image: ${LOWER_IMAGE}:${IMAGE_TAG}|g" k8s-manifests/deployment.yaml
 
-      # 3. K8s Manifest Repo ထဲသို့ Git Commit & Push ပြန်လုပ်ခြင်း (Token ဖြင့် Authenticate လုပ်ရန်)
+      # 3. Git Commit & Push ကို အလိုအလျောက် လုပ်ဆောင်ခြင်း
       - name: Commit and Push to Manifest Repo
         run: |
           cd k8s-manifests
@@ -76,6 +80,6 @@ jobs:
           git add deployment.yaml
           
           if ! git diff --cached --quiet; then
-            git commit -m "CI: Update image tag to ${{ steps.meta.outputs.version }}"
+            git commit -m "CI: Auto-update image tag to sha-$(echo ${{ github.sha }} | cut -c1-7)"
             git push https://x-access-token:${{ secrets.GITOPS_ACCESS_TOKEN }}@github.com/Yar-Zar/K8s-Manifests-Repository.git main
           fi
