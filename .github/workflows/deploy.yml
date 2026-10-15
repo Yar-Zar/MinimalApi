@@ -46,29 +46,27 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      # 1. K8s Manifest Repo ကို သီးသန့် Folder တစ်ခုအနေဖြင့် ထပ်မံ Checkout လုပ်ခြင်း
+     # 1. K8s Manifest Repo ကို သီးသန့် Folder တစ်ခုအနေဖြင့် ထပ်မံ Checkout လုပ်ခြင်း
       - name: Checkout K8s Manifests Repo
         uses: actions/checkout@v4
         with:
           repository: Yar-Zar/K8s-Manifests-Repository
           token: ${{ secrets.GITOPS_ACCESS_TOKEN }}
           path: k8s-manifests
+          persist-credentials: true
 
-      # 2. Manifest ဖိုင်ထဲက Image Tag ကို စာလုံးသေးဖြင့် အသစ်လဲလှယ်ခြင်း
+      # 2. Manifest ဖိုင်ထဲက Image Tag ကို တိကျစွာ အသစ်လဲလှယ်ခြင်း
       - name: Update Kubernetes Image Tag
         env:
           IMAGE_VERSION: ${{ steps.meta.outputs.version }}
-          # GHCR အတွက် Username/Repo ကို စာလုံးသေးအဖြစ် သီးသန့်ဖန်တီးခြင်း
           FULL_IMAGE: ${{ env.REGISTRY }}/${{ github.repository }}
         run: |
-          # tolower အသုံးပြု၍ ghcr.io/yar-zar/minimalapi ပုံစံ lowercase သို့ တိကျစွာပြောင်းမည်
           LOWER_IMAGE=$(echo "${{ env.FULL_IMAGE }}" | tr '[:upper:]' '[:lower:]')
           
-          sed -i \
-            "s|image: ghcr.io/.*/minimalapi:.*|image: ${LOWER_IMAGE}:${IMAGE_VERSION}|" \
-            k8s-manifests/deployment.yaml
+          # deployment.yaml ထဲရှိ image line ကို ရှာပြီး အသစ်ဖြင့် အစားထိုးခြင်း
+          sed -i "s|image:.*|image: ${LOWER_IMAGE}:${IMAGE_VERSION}|g" k8s-manifests/deployment.yaml
 
-      # 3. K8s Manifest Repo ထဲသို့ Git Commit & Push ပြန်လုပ်ခြင်း
+      # 3. K8s Manifest Repo ထဲသို့ Git Commit & Push ပြန်လုပ်ခြင်း (Token ဖြင့် Authenticate လုပ်ရန်)
       - name: Commit and Push to Manifest Repo
         run: |
           cd k8s-manifests
@@ -79,5 +77,5 @@ jobs:
           
           if ! git diff --cached --quiet; then
             git commit -m "CI: Update image tag to ${{ steps.meta.outputs.version }}"
-            git push origin main
+            git push https://x-access-token:${{ secrets.GITOPS_ACCESS_TOKEN }}@github.com/Yar-Zar/K8s-Manifests-Repository.git main
           fi
