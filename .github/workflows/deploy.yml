@@ -6,6 +6,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
+  # GitHub repository නာမည်ကို အစဥ်အမြဲ စာလုံးသေး (Lowercase) ဖြစ်စေရန် ချက်ချင်းပြောင်းပေးခြင်း
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
@@ -30,7 +31,8 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          # toLower သုံး၍ GHCR လိုအပ်ချက်အရ စာလုံးသေးဖြင့် သတ်မှတ်ခြင်း
+          images: ${{ env.REGISTRY }}/${{ github.repository }}
           tags: |
             type=sha,format=short
             latest
@@ -52,13 +54,18 @@ jobs:
           token: ${{ secrets.GITOPS_ACCESS_TOKEN }}
           path: k8s-manifests
 
-      # 2. Manifest ဖိုင်ထဲက Image Tag ကို အသစ်လဲလှယ်ခြင်း (Generic Regex သုံးထားပါသည်)
+      # 2. Manifest ဖိုင်ထဲက Image Tag ကို စာလုံးသေးဖြင့် အသစ်လဲလှယ်ခြင်း
       - name: Update Kubernetes Image Tag
         env:
           IMAGE_VERSION: ${{ steps.meta.outputs.version }}
+          # GHCR အတွက် Username/Repo ကို စာလုံးသေးအဖြစ် သီးသန့်ဖန်တီးခြင်း
+          FULL_IMAGE: ${{ env.REGISTRY }}/${{ github.repository }}
         run: |
+          # tolower အသုံးပြု၍ ghcr.io/yar-zar/minimalapi ပုံစံ lowercase သို့ တိကျစွာပြောင်းမည်
+          LOWER_IMAGE=$(echo "${{ env.FULL_IMAGE }}" | tr '[:upper:]' '[:lower:]')
+          
           sed -i \
-            "s|image: ghcr.io/.*/minimalapi:.*|image: ghcr.io/${{ github.repository }}:${IMAGE_VERSION}|" \
+            "s|image: ghcr.io/.*/minimalapi:.*|image: ${LOWER_IMAGE}:${IMAGE_VERSION}|" \
             k8s-manifests/deployment.yaml
 
       # 3. K8s Manifest Repo ထဲသို့ Git Commit & Push ပြန်လုပ်ခြင်း

@@ -1,30 +1,20 @@
-﻿
-apiVersion: argoproj.io/v1alpha1
+﻿apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: test-minimal-api
+  name: minimalapi-gitops
   namespace: argocd
 spec:
   project: default
-
   source:
-    repoURL: 'https://github.com/Yar-Zar/MinimalApi.git'
+    repoURL: 'https://github.com/Yar-Zar/K8s-Manifests-Repository'
     targetRevision: main
-    path: TestMinimalApi/k8s
-
+    path: '.'
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: default
-
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
-    retry:
-      limit: 5
-      backoff:
-        duration: 5s
-        factor: 2
-        maxDuration: 3m
