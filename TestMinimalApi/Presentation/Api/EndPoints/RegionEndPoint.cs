@@ -9,7 +9,7 @@ namespace TestMinimalApi.Presentation.Api.EndPoints
         
         public static void MapTestEndPoints(this WebApplication app)
         {
-            var group = app.MapGroup("/api/tesminimalapi").
+            var group = app.MapGroup("/api/testminimalapi").
                        //RequireAuthorization().
                        WithTags("Region");
             group.MapGet("/getallregions", GetAllAsync)
