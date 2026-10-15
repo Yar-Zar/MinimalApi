@@ -47,7 +47,7 @@ jobs:
       - name: Update Kubernetes Manifest in GitOps Repo
         uses: fjogeleit/yaml-update-action@main
         with:
-          repository: yar-zar/k8s-manifests    # သင့်ရဲ့ K8s Manifest Repo (Owner/Repo Name)
+          repository: Yar-Zar/k8s-manifests    # သင့်ရဲ့ K8s Manifest Repo (Owner/Repo Name)
           branch: main
           token: ${{ secrets.GITOPS_ACCESS_TOKEN }} # Step 2 က ဖန်တီးခဲ့သော Token
           propertyPath: 'spec.template.spec.containers[0].image'
