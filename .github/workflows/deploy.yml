@@ -47,11 +47,10 @@ jobs:
       - name: Update Kubernetes Manifest in GitOps Repo
         uses: fjogeleit/yaml-update-action@main
         with:
-          repository: Yar-Zar/k8s-manifests    
+          repository: Yar-Zar/K8s-Manifests-Repository  # Repo နာမည်ကို casing အမှန် (K8s-Manifests-Repository) ထည့်ပါ
           branch: main
           token: ${{ secrets.GITOPS_ACCESS_TOKEN }}
           valueFile: 'deployment.yaml'
           propertyPath: 'spec.template.spec.containers[0].image'
           value: ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.version }}
-          # targetFile: 'deployment.yaml'
-          commitMessage: 'CI: Update image tag to ${{ steps.meta.outputs.version }}'
+          message: 'CI: Update image tag to ${{ steps.meta.outputs.version }}'  # commitMessage အစား message ကို သုံးပါ
