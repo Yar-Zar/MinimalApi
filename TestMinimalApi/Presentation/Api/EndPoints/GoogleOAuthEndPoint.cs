@@ -35,8 +35,8 @@ namespace TestMinimalApi.Presentation.Api.EndPoints
                     Email = user.Claims.FirstOrDefault(c => c.Type.Contains("email"))?.Value
                 }
                );
-            })
-  .RequireAuthorization();
+            });
+  //.RequireAuthorization();
             group.MapGet("/logout", async (HttpContext context) =>
             {
                 await context.SignOutAsync();

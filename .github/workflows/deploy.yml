@@ -1,8 +1,12 @@
-﻿name: CI Pipeline
+﻿name: CI to GHCR & GitOps Update
 
 on:
   push:
     branches: [ "main" ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build-and-push:
@@ -12,42 +16,41 @@ jobs:
       packages: write
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Log in to Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.CR_PAT }}
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.CR_PAT }}  # GHCR အတွက် ဖွဲ့စည်းထားသော Secret (သို့မဟုတ် GITHUB_TOKEN)
 
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ./TestMinimalApi/Dockerfile
-        push: true
-        tags: |
-          ghcr.io/yar-zar/minimalapi:${{ github.sha }}
-          ghcr.io/yar-zar/minimalapi:latest
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,format=short
+            latest
 
-    - name: Update Kubernetes image tag
-      env:
-        IMAGE_TAG: ${{ github.sha }}
-      run: |
-        sed -i \
-          "s|image: ghcr.io/yar-zar/minimalapi:.*|image: ghcr.io/yar-zar/minimalapi:${IMAGE_TAG}|" \
-          TestMinimalApi/k8s/deployment.yml
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./TestMinimalApi/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
-    - name: Commit and push GitOps change
-      run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-        git add TestMinimalApi/k8s/deployment.yml
-
-        if ! git diff --cached --quiet; then
-          git commit -m "chore(gitops): deploy ${GITHUB_SHA}"
-          git push origin HEAD:main
-        fi
+      - name: Update Kubernetes Manifest in GitOps Repo
+        uses: fjogeleit/yaml-update-action@main
+        with:
+          repository: yar-zar/k8s-manifests    # သင့်ရဲ့ K8s Manifest Repo (Owner/Repo Name)
+          branch: main
+          token: ${{ secrets.GITOPS_ACCESS_TOKEN }} # Step 2 က ဖန်တီးခဲ့သော Token
+          propertyPath: 'spec.template.spec.containers[0].image'
+          value: ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.version }}
+          targetFile: 'deployment.yaml'
+          commitMessage: 'CI: Update image tag to ${{ steps.meta.outputs.version }}'
